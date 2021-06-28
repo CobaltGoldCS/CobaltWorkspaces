@@ -7,4 +7,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
-    input()
+    input() # Just here to avoid closing the window as soon as it runs

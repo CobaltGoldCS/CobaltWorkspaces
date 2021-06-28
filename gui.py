@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import os
 import importlib
 import pickle
+from multiprocessing import Process
 
 from customClasses.DataClass import DataClass
 from customClasses.Item import ListItem
@@ -23,6 +24,11 @@ for name in os.listdir("actions"):
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
+        """Sets up the initial Ui Components
+
+        Args:
+            parent (QtWidgets.QWidget, optional): The parent of this window. Defaults to None.
+        """
         super(MainWindow, self).__init__(parent)
         self.setObjectName("MainWindow")
         self.resize(800, 600)
@@ -41,8 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sizePolicy.setVerticalStretch(0)
 
         self.actionMethodInput = QtWidgets.QTextEdit(self.gridLayoutWidget)
-        self.actionMethodInput.setMaximumSize(QtCore.QSize(16777215, 50))
-        self.actionMethodInput.setPlaceholderText("Please select an action from the dropdown to the right")
+        self.actionMethodInput.setMaximumSize(QtCore.QSize(17725, 50))
         self.mainLayout.addWidget(self.actionMethodInput, 0, 0, 1, 1)
 
         sizePolicy.setHeightForWidth(self.actionMethodInput.sizePolicy().hasHeightForWidth())
@@ -117,13 +122,18 @@ class MainWindow(QtWidgets.QMainWindow):
         QtCore.QMetaObject.connectSlotsByName(self)
 
     def retranslateUi(self):
+        """Adds a lot of string information pertaining to items like tooltips and menu items
+        """
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("MainWindow", "CobaltWorkshop"))
         self.actionMethodInput.setToolTip(_translate("MainWindow", "<p>Specify the directions you want to take when using an action</p>"))
         self.actionDropdown.setToolTip(_translate("MainWindow", "<p>Select the action type you want to take here</p>"))
+        
         self.openMenu.setTitle(_translate("MainWindow", "Open"))
         self.runFile.setText(_translate("MainWindow", "Run Workshop File"))
         self.editFile.setText(_translate("MainWindow", "Edit Workshop File"))
+
+        self.actionMethodInput.setPlaceholderText("Please select an action from the dropdown to the right")
     
     def createListItemFromDataclass(self, dataclass : DataClass):
         item = QtWidgets.QListWidgetItem(self.actionList)
@@ -170,7 +180,6 @@ class MainWindow(QtWidgets.QMainWindow):
             return # Break when filepath does not exist
         
         with open(filepath, 'wb') as filename:
-            #TODO Fix listItem object so it can be pickled
             pickle.dump(self.actionList.workSpace, filename)
 
     def openFile(self):
@@ -178,20 +187,17 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.path) == 0:
             return
         with open(self.path, 'rb') as picklefile:
-            
             self.actionList.workSpace = pickle.load(picklefile)
-            
+            self.actionList.clear()
             for dataclass in self.actionList.workSpace:
                 self.createListItemFromDataclass(dataclass)
     
     def runWorkspaceFile(self):
         for dataclass in self.actionList.workSpace:
+            process = Process(target = self.executeAction(dataclass))
+            process.start()
+            process.join()
+    
+    def executeAction(self, dataclass : DataClass):
             itemClass = actionsList.getFromString(dataclass.bridgeClass)
             itemClass(dataclass).run()
-
-    
-
-
-
-
-

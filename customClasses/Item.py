@@ -20,21 +20,17 @@ class ListItem(QtWidgets.QWidget):
         self.connection = item
 
         self.gridLayout = QtWidgets.QHBoxLayout(self)
-        self.gridLayout.setObjectName("gridLayout")
 
-        self.actionImageDisplay = QtWidgets.QLabel(self)
-        self.actionImageDisplay.setMinimumSize(QtCore.QSize(0, 10))
-        self.actionImageDisplay.setObjectName("actionImageDisplay")
+        self.actionImageDisplay = QtWidgets.QGraphicsView(self)
+        self.actionImageDisplay.setMaximumSize(QtCore.QSize(self.height() * 2, self.height() * 2))
         self.gridLayout.addWidget(self.actionImageDisplay)
 
         self.commandDisplay = QtWidgets.QLabel(self)
-        self.commandDisplay.setMinimumSize(QtCore.QSize(0, 10))
-        self.commandDisplay.setObjectName("commandDisplay")
         self.gridLayout.addWidget(self.commandDisplay)
 
         self.deleteButton = QtWidgets.QPushButton(self)
-        self.deleteButton.setMinimumSize(QtCore.QSize(0, 10))
-        self.deleteButton.setObjectName("deleteButton")
+        self.deleteButton.setMinimumSize(QtCore.QSize(self.height() * 3, self.height()))
+        self.deleteButton.setMaximumSize(QtCore.QSize(self.height() * 3, self.height()))
         self.gridLayout.addWidget(self.deleteButton)
 
         self.retranslateUi()
@@ -42,12 +38,23 @@ class ListItem(QtWidgets.QWidget):
 
     def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        self.actionImageDisplay.setText(_translate("self", "ImageLabel"))
+        #self.actionImageDisplay.setText(_translate("self", "ImageLabel"))
         self.deleteButton.setText(_translate("self", "DeleteButton"))
+        self.actionImageDisplay.setObjectName("actionImageDisplay")
+        self.deleteButton.setObjectName("deleteButton")
+        self.commandDisplay.setObjectName("commandDisplay")
+        self.gridLayout.setObjectName("gridLayout")
 
     def completeInfo(self, action : Action):
         self.action = action
-        self.actionImageDisplay.setPixmap(QtGui.QPixmap(action.iconPath))
+
+        scene = QtWidgets.QGraphicsScene(self)
+        pixmap = QtGui.QPixmap(action.iconPath).scaledToHeight(self.actionImageDisplay.height() * 1.7)
+        item = QtWidgets.QGraphicsPixmapItem(pixmap)
+        scene.addItem(item)
+        self.actionImageDisplay.setScene(scene)
+
+        
         self.commandDisplay.setText(action.command)
         self.deleteButton.clicked.connect(self.onDelete)
 
