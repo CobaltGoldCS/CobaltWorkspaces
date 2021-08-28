@@ -1,7 +1,7 @@
 import os, sys, subprocess
 from actions.Action import Action
 
-class OpenFileAction(Action):
+class OpenFile(Action):
     hintText = "Type in a filepath for your system"
     def run(self) -> None:
         filename = self.command
@@ -12,4 +12,4 @@ class OpenFileAction(Action):
                 opener = "open" if sys.platform == "darwin" else "xdg-open"
                 subprocess.call([opener, filename])
         except Exception as e:
-            error(e)
+            self.error(e)

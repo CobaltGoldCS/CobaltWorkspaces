@@ -22,6 +22,7 @@ class ListItem(QtWidgets.QWidget):
         self.gridLayout = QtWidgets.QHBoxLayout(self)
 
         self.actionImageDisplay = QtWidgets.QGraphicsView(self)
+        self.actionImageDisplay.setStyleSheet("QGraphicsView {background-color: white; border: 0px solid black;}")
         self.actionImageDisplay.setMaximumSize(QtCore.QSize(self.height() * 2, self.height() * 2))
         self.gridLayout.addWidget(self.actionImageDisplay)
 
@@ -49,7 +50,7 @@ class ListItem(QtWidgets.QWidget):
         self.action = action
 
         scene = QtWidgets.QGraphicsScene(self)
-        pixmap = QtGui.QPixmap(action.iconPath).scaledToHeight(self.actionImageDisplay.height() * 1.7)
+        pixmap = QtGui.QPixmap(action.iconPath).scaledToHeight(self.actionImageDisplay.height() * 1.8)
         item = QtWidgets.QGraphicsPixmapItem(pixmap)
         scene.addItem(item)
         self.actionImageDisplay.setScene(scene)

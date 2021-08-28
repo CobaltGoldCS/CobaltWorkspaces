@@ -5,19 +5,10 @@ import importlib
 import pickle
 from multiprocessing import Process
 
-from customClasses.DataClass import DataClass
-from customClasses.Item import ListItem
+
 from customClasses.CustomList import CustomList
-# Import everything from actions folder
-actionsList = CustomList()
-for name in os.listdir("actions"):
-    if name.endswith(".py"):
-        #strip the extension
-        module = name[:-3]
-        # set the module name in the current global name space:
-        mod = importlib.import_module(f"actions.{module}")
-        modClass = getattr(mod, module)
-        if module not in ("Action", "__init__"): actionsList.append(modClass)
+from guiActions import GuiActions
+
 
 
 
@@ -33,8 +24,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setObjectName("MainWindow")
         self.resize(800, 600)
 
-        self.path = ""
+        self.path = str("")
+        self.controller = GuiActions(self)
 
+        
         self.gridLayoutWidget = QtWidgets.QWidget()
         #self.gridLayoutWidget.setObjectName("gridLayoutWidget")
         
@@ -69,8 +62,11 @@ class MainWindow(QtWidgets.QMainWindow):
         sizePolicy.setVerticalStretch(0)
 
         self.actionAdd = QtWidgets.QPushButton(self.gridLayoutWidget)
-        # TODO: Add icon to actionAdd
+        icon = QtGui.QIcon(os.path.join("icons", "addItem.png"))
+        self.actionAdd.setIcon(icon)
+        self.actionAdd.setIconSize(QtCore.QSize(50, 50))
         self.actionAdd.setSizePolicy(sizePolicy)
+        self.actionAdd.setStyleSheet("QPushButton {border-radius: 10px}")
         self.actionAdd.setMaximumSize(QtCore.QSize(50, 50))
 
         sizePolicy.setHeightForWidth(self.actionAdd.sizePolicy().hasHeightForWidth())
@@ -83,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.mainLayout.addWidget(self.actionAdd, 0, 2, 1, 1)
         self.mainLayout.addWidget(self.actionList, 1, 0, 1, 3)
         
-        
+        # Set up Menu Bar
 
         self.menubar = QtWidgets.QMenuBar(self)
         self.openMenu = QtWidgets.QMenu(self.menubar)
@@ -109,16 +105,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setStatusBar(self.statusbar)
         self.setMenuBar(self.menubar)
 
-        self.actionAdd.clicked.connect(self.addButtonClick)
-        self.editFile.triggered.connect(self.openFile)
-        self.runFile.triggered.connect(self.runWorkspaceFile)
+        self.actionAdd.clicked.connect(self.controller.addButtonClick)
+        self.editFile.triggered.connect(self.controller.openFile)
+        self.runFile.triggered.connect(self.controller.runWorkspaceFile)
 
         self.openMenu.addAction(self.runFile)
         self.openMenu.addAction(self.editFile)
         self.menubar.addAction(self.openMenu.menuAction())
 
         self.retranslateUi()
-        self.initializeDropdown()
+        self.controller.initializeDropdown()
         QtCore.QMetaObject.connectSlotsByName(self)
 
     def retranslateUi(self):
@@ -134,70 +130,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editFile.setText(_translate("MainWindow", "Edit Workshop File"))
 
         self.actionMethodInput.setPlaceholderText("Please select an action from the dropdown to the right")
-    
-    def createListItemFromDataclass(self, dataclass : DataClass):
-        item = QtWidgets.QListWidgetItem(self.actionList)
-        custom = ListItem(self.actionList, item)
 
-        itemClass = actionsList.getFromString(dataclass.bridgeClass)
-        custom.completeInfo(itemClass(dataclass))
-
-        # These are both important variables for accessing and changing things from inside of 'ListItem'
-        item.connection = custom
-        item.parent = self.actionList
-
-        item.setSizeHint(custom.sizeHint())
-    
-        self.actionList.addItem(item)
-        self.actionList.setItemWidget(item, custom)
-
-    def initializeDropdown(self):
-        self.actionDropdown.addItems([action.__name__ for action in actionsList])
-        self.actionDropdown.activated[str].connect(self.onDropdownSelectionChange)
-    
-    def onDropdownSelectionChange(self):
-        item = actionsList[self.actionDropdown.currentIndex()]
-        self.actionMethodInput.setPlaceholderText(item.hintText)
-    
-    def addButtonClick(self):
-        itemClass = actionsList[self.actionDropdown.currentIndex()]
-        itemData = DataClass(itemClass.__name__, self.actionMethodInput.toPlainText())
-        self.actionMethodInput.clear()
-        self.actionList.workSpace.append(itemData)
-        self.createListItemFromDataclass(itemData)
-    
     def closeEvent (self, QCloseEvent):
         if len(self.actionList.workSpace) > 0:
-            self.saveFile()
+            self.controller.saveFile()
         return super(MainWindow, self).closeEvent(QCloseEvent)
-    
-    def saveFile(self):
-        filepath = self.path
-        if len(self.path) == 0:
-            filepath = QtWidgets.QFileDialog.getSaveFileName(None, "Save a workspace File", filter = "Cobalt Workspace File (*.coblt)")[0]
-        
-        if len(filepath) == 0:
-            return # Break when filepath does not exist
-        
-        with open(filepath, 'wb') as filename:
-            pickle.dump(self.actionList.workSpace, filename)
-
-    def openFile(self):
-        self.path = QtWidgets.QFileDialog.getOpenFileName(None, "Open a workspace File", filter = "Cobalt Workspace File (*.coblt)")[0]
-        if len(self.path) == 0:
-            return
-        with open(self.path, 'rb') as picklefile:
-            self.actionList.workSpace = pickle.load(picklefile)
-            self.actionList.clear()
-            for dataclass in self.actionList.workSpace:
-                self.createListItemFromDataclass(dataclass)
-    
-    def runWorkspaceFile(self):
-        for dataclass in self.actionList.workSpace:
-            process = Process(target = self.executeAction(dataclass))
-            process.start()
-            process.join()
-    
-    def executeAction(self, dataclass : DataClass):
-            itemClass = actionsList.getFromString(dataclass.bridgeClass)
-            itemClass(dataclass).run()

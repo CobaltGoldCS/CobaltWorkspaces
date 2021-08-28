@@ -3,9 +3,8 @@ import webbrowser
 from os import path
 
 
-class WebAction(Action):
+class OpenUrl(Action):
     hintText = "Type the url you want to visit"
-    iconPath = path.join("actions", "noImage.png")
 
     def run (self) -> None:
         try:
